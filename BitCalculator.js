@@ -79,7 +79,7 @@ function returnOne(listOfPredicates, defaultValue) {
  * S -> N + S | N + F | F + S | F
  * F -> N * F | N * E | E * F | E
  * E -> (S) | N
- * N -> D.D | D
+ * N -> D.D | -D.D | D | -D
  * D ->  0D | 1D | epsilon
  */
 
@@ -250,7 +250,7 @@ function parseF(stream) {
 }
 
 /**
- * E -> (S) | N
+ * E -> (S) | N | N
  *
  * stream => pair(E, stream)
  *
@@ -277,7 +277,7 @@ function parseE(stream) {
 }
 
 /**
- * N -> D.D | D
+ * N -> D.D | -D.D | D | -D
  *
  * stream => pair(N, stream)
  *
@@ -290,6 +290,30 @@ function parseN(stream) {
       if (nextStream.peek() === ".") {
         const { left: D2, right: nextNextStream } = parseD(nextStream.next());
         return pair({ type: "N", int: D1, decimal: D2 }, nextNextStream);
+      }
+      throw new Error(
+        "Error occurred while parsing N," + nextStream.toString()
+      );
+    },
+    () => {
+      if (stream.peek() === "-") {
+        const { left: D1, right: nextStream } = parseD(stream.next());
+        if (nextStream.peek() === ".") {
+          const { left: D2, right: nextNextStream } = parseD(nextStream.next());
+          return pair(
+            { type: "N", int: D1, decimal: D2, negative: true },
+            nextNextStream
+          );
+        }
+      }
+      throw new Error(
+        "Error occurred while parsing N," + nextStream.toString()
+      );
+    },
+    () => {
+      if (stream.peek() === "-") {
+        const { left: D, right: nextStream } = parseD(stream.next());
+        return pair({ type: "N", int: D, negative: true }, nextStream);
       }
       throw new Error(
         "Error occurred while parsing N," + nextStream.toString()
@@ -352,7 +376,7 @@ function execute(tree) {
  */
 function exeProgram(program) {
   if (program.expression === null && program.program === null) return [];
-  const expression = renderExpression(program.expression);
+  const expression = exeExpression(program.expression);
   const listOfExpression = exeProgram(program.program);
   return ["> " + expression, ...listOfExpression];
 }
@@ -361,7 +385,7 @@ function exeProgram(program) {
  * @param {*} expression
  * @returns Number
  */
-function renderExpression(expression) {
+function exeExpression(expression) {
   return exeS(expression.S);
 }
 
@@ -434,7 +458,8 @@ function exeN(N) {
     decimal += id * decimalBits[i];
     id /= 2;
   }
-  return integer + decimal;
+  const number = integer + decimal;
+  return !!N.negative ? -1 * number : number;
 }
 
 /**
