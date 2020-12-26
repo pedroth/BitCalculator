@@ -495,10 +495,22 @@ Code e.g:
 
 document.body.onresize = () => {
   const style = document.getElementById("composer").style;
+  const input = document.getElementById("inputContainer");
+  const output = document.getElementById("outputContainer");
   if (window.innerWidth >= window.innerHeight) {
     style["flex-direction"] = "row";
+
+    input.style.width = `${window.innerWidth / 2}px`;
+    input.style.height = `${window.innerHeight * 0.95}px`;
+
+    output.style.width = `${window.innerWidth / 2}px`;
+    output.style.height = `${window.innerHeight * 0.95}px`;
   } else {
     style["flex-direction"] = "column";
+    input.style.width = `${100}%`;
+    input.style.height = `${window.innerHeight / 2}px`;
+    output.style.width = `${100}%`;
+    output.style.height = `${window.innerHeight / 2}px`;
   }
 };
 
