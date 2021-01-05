@@ -44,7 +44,8 @@
       crossorigin="anonymous"
     ></script>
     <script>
-      ace.config.set("basePath", "/BitCalculator/");
+      if (location.port !== "") ace.config.set("basePath", "/");
+      else ace.config.set("basePath", "/BitCalculator/");
       var editor = ace.edit("input");
       editor.setTheme("ace/theme/dracula");
       editor.setOptions({
