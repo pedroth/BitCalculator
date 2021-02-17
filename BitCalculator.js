@@ -492,8 +492,7 @@ Code e.g:
 =======================
 `;
 }
-
-document.body.onresize = () => {
+function onResize() {
   const style = document.getElementById("composer").style;
   const input = document.getElementById("inputContainer");
   const output = document.getElementById("outputContainer");
@@ -512,7 +511,10 @@ document.body.onresize = () => {
     output.style.width = `${100}%`;
     output.style.height = `${window.innerHeight / 2}px`;
   }
-};
+}
+
+onResize();
+window.addEventListener("resize", onResize);
 
 (() => {
   let timer = null;
