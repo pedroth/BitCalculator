@@ -119,7 +119,9 @@ function eatCommentTokenFromStream(stream) {
  * Program -> Expression Program | epsilon
  * Expression -> S;
  * S -> N + S | N + F | F + S | F
+ * S -> N - S | N - F | F - S (TODO)
  * F -> N * F | N * E | E * F | E
+ * F -> N / F | N / E | E / F (TODO)
  * E -> (S) | N
  * N -> D.D | -D.D | D | -D
  * D ->  0D | 1D | epsilon
