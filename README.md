@@ -1,10 +1,10 @@
 # BitCalculator
 
-Simple Binary calculator
+Simple binary calculator
 
 ## Available operators
 
-\*, +, ()
+`*, +, ()`
 
 ## Numbers in binary
 
@@ -28,5 +28,8 @@ D -> 0D | 1D | epsilon
 
 # Examples
 
-`(1 + 1.1) * 0.1;`-> 1.25
-`1 + 1 + 1 * 10;`-> 4
+```
+(1 + 1.1) * 0.1; \\ 1.25
+
+1 + 1 + 1 * 10; \\ 4
+```
