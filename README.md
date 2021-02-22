@@ -8,8 +8,8 @@ Simple Binary calculator
 
 ## Numbers in binary
 
-11.0010010 ~ 3.14
-101 = 5
+`11.0010010 ~ 3.14`
+`101 = 5`
 
 # Grammar
 
