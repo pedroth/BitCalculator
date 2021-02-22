@@ -65,6 +65,48 @@ function returnOne(listOfPredicates, defaultValue) {
   };
 }
 
+function removeComments(streamWithComments) {
+  const stack = [];
+  let state = 0;
+  let s = streamWithComments;
+  while (s.hasNext()) {
+    const isComment = isCommentToken(s);
+    if (!isComment && state === 0) {
+      stack.push(s.peek());
+      s = s.next();
+    } else if (isComment && state === 0) {
+      s = eatCommentTokenFromStream(s);
+      state = 1;
+    } else if (!isComment && state === 1) {
+      s = s.next();
+    } else {
+      // isComment && state === 1
+      s = eatCommentTokenFromStream(s);
+      state = 0;
+    }
+  }
+  return stream(stack);
+}
+
+function isCommentToken(stream) {
+  let s = stream;
+  let n = 3;
+  while (s.peek() === "`" && n > 0) {
+    s = s.next();
+    n--;
+  }
+  return n === 0;
+}
+
+function eatCommentTokenFromStream(stream) {
+  let s = stream;
+  let n = 3;
+  while (n > 0) {
+    s = s.next();
+    n--;
+  }
+  return s;
+}
 //========================================================================================
 /*                                                                                      *
  *                                        PARSER                                        *
@@ -88,7 +130,11 @@ function returnOne(listOfPredicates, defaultValue) {
  * @param {*} string
  */
 function parse(string) {
-  const filterStream = stream(string).filter(c => c !== " " && c !== "\n");
+  console.log("Aquinas");
+  const removeCommentsStream = removeComments(stream(string));
+  const filterStream = removeCommentsStream.filter(
+    c => c !== " " && c !== "\n"
+  );
   const program = parseProgram(filterStream);
   console.log("Parse tree", program.left);
   return program.left;
@@ -478,19 +524,15 @@ function exeD(D) {
 //========================================================================================
 
 function getReadMe() {
-  return `Simple Binary calculator
+  return `\`\`\`
+Simple Binary calculator
 
 Available operators: 
   *, +, ()
 
 Numbers in binary, e.g: 
   11.0010010 ~ 3.14
-
-Code e.g: 
-  (1 + 1.1) * 0.1;
-   1 + 1 + 1 * 10;
-=======================
-`;
+\`\`\``;
 }
 function onResize() {
   const style = document.getElementById("composer").style;
@@ -518,18 +560,17 @@ window.addEventListener("resize", onResize);
 
 (() => {
   let timer = null;
-  const input = "(1 + 1.1) * 0.1;\n 1 + 1 + 1 * 10;";
+  const input = getReadMe() + "\n" + "(1 + 1.1) * 0.1;\n 1 + 1 + 1 * 10;";
   const editor = ace.edit("input");
   editor.setValue(input);
   const output = document.getElementById("output");
-  output.value = getReadMe() + "\n" + execute(parse(editor.getValue()));
+  output.value = execute(parse(editor.getValue()));
   editor.getSession().on("change", () => {
     if (timer) {
       clearTimeout(timer);
     }
     timer = setTimeout(
-      () =>
-        (output.value = getReadMe() + "\n" + execute(parse(editor.getValue()))),
+      () => (output.value = execute(parse(editor.getValue()))),
       250
     );
   });
