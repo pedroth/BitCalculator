@@ -55,7 +55,7 @@ function or(...rules) {
  * @param {*} listOfPredicates
  * @param {*} defaultValue
  */
-function returnOne(listOfPredicates, defaultValue) {
+function returnOne(listOfPredicates, defaultValue = 0) {
   return input => {
     for (let i = 0; i < listOfPredicates.length; i++) {
       if (listOfPredicates[i].predicate(input))
@@ -118,10 +118,8 @@ function eatCommentTokenFromStream(stream) {
  *
  * Program -> Expression Program | epsilon
  * Expression -> S;
- * S -> N + S | N + F | F + S | F
- * S -> N - S | N - F | F - S (TODO)
- * F -> N * F | N * E | E * F | E
- * F -> N / F | N / E | E / F (TODO)
+ * S -> N (+ | -) S | N (+ | -) F | F (+ | -) S | F
+ * F -> N (* | /) F | N (* | /) E | E (* | /) F | E
  * E -> (S) | N
  * N -> D.D | -D.D | D | -D
  * D ->  0D | 1D | epsilon
@@ -141,8 +139,6 @@ function parse(string) {
 }
 
 /**
- * Program -> Expression Program | epsilon(EndOfFile really...)
- *
  * stream => pair(Program, stream)
  *
  * @param {*} stream
@@ -166,8 +162,6 @@ function parseProgram(stream) {
 }
 
 /**
- * Expression -> S;
- *
  * stream => pair(Expression, stream)
  *
  * @param {*} stream
@@ -189,7 +183,7 @@ function parseExpression(stream) {
 }
 
 function parseBinary(
-  token,
+  tokenArray,
   parseLeft,
   parseRight,
   composeResult,
@@ -197,19 +191,18 @@ function parseBinary(
 ) {
   return stream => {
     const { left: leftTree, right: nextStream } = parseLeft(stream);
-    if (nextStream.peek() === token) {
+    const operator = nextStream.peek();
+    if (tokenArray.some(t => t === operator)) {
       const { left: rightTree, right: nextNextStream } = parseRight(
         nextStream.next()
       );
-      return pair(composeResult(leftTree, rightTree), nextNextStream);
+      return pair(composeResult(leftTree, rightTree, operator), nextNextStream);
     }
     throw new Error(errorMessage + nextStream.toString());
   };
 }
 
 /**
- * S -> N + S | N + F | F + S | F
- *
  * stream => pair(S, stream)
  *
  * @param {*} stream
@@ -219,28 +212,28 @@ function parseS(stream) {
   return or(
     () => {
       return parseBinary(
-        "+",
+        ["+", "-"],
         parseN,
         parseS,
-        (N, S) => ({ type: "S", N, S }),
+        (N, S, op) => ({ type: "S", N, S, op }),
         errorText
       )(stream);
     },
     () => {
       return parseBinary(
-        "+",
+        ["+", "-"],
         parseN,
         parseF,
-        (N, F) => ({ type: "S", N, F }),
+        (N, F, op) => ({ type: "S", N, F, op }),
         errorText
       )(stream);
     },
     () => {
       return parseBinary(
-        "+",
+        ["+", "-"],
         parseF,
         parseS,
-        (F, S) => ({ type: "S", F, S }),
+        (F, S, op) => ({ type: "S", F, S, op }),
         errorText
       )(stream);
     },
@@ -252,8 +245,6 @@ function parseS(stream) {
 }
 
 /**
- * F -> N * F | N * E | E * F | E
- *
  * stream => pair(F, stream)
  *
  * @param {*} stream
@@ -263,28 +254,28 @@ function parseF(stream) {
   return or(
     () => {
       return parseBinary(
-        "*",
+        ["*", "/"],
         parseN,
         parseF,
-        (N, F) => ({ type: "F", N, F }),
+        (N, F, op) => ({ type: "F", N, F, op }),
         errorText
       )(stream);
     },
     () => {
       return parseBinary(
-        "*",
+        ["*", "/"],
         parseN,
         parseE,
-        (N, E) => ({ type: "F", N, E }),
+        (N, E, op) => ({ type: "F", N, E, op }),
         errorText
       )(stream);
     },
     () => {
       return parseBinary(
-        "*",
+        ["*", "/"],
         parseE,
         parseF,
-        (E, F) => ({ type: "F", E, F }),
+        (E, F, op) => ({ type: "F", E, F, op }),
         errorText
       )(stream);
     },
@@ -296,8 +287,6 @@ function parseF(stream) {
 }
 
 /**
- * E -> (S) | N | N
- *
  * stream => pair(E, stream)
  *
  * @param {*} stream
@@ -323,8 +312,6 @@ function parseE(stream) {
 }
 
 /**
- * N -> D.D | -D.D | D | -D
- *
  * stream => pair(N, stream)
  *
  * @param {*} stream
@@ -373,8 +360,6 @@ function parseN(stream) {
 }
 
 /**
- * D ->  0D | 1D | epsilon
- *
  * stream => pair(D, stream)
  *
  * @param {*} stream
@@ -416,7 +401,6 @@ function execute(tree) {
 }
 
 /**
- * Program -> Expression Program | epsilon
  * @param {*} program
  * @returns Array<Number>
  */
@@ -427,7 +411,6 @@ function exeProgram(program) {
   return ["> " + expression, ...listOfExpression];
 }
 /**
- * Expression -> S;
  * @param {*} expression
  * @returns Number
  */
@@ -436,52 +419,58 @@ function exeExpression(expression) {
 }
 
 /**
- * S -> N + S | N + F | F + S | F
  * @param {*} S
  * @returns Number
  */
 function exeS(S) {
-  return returnOne(
-    [
-      { predicate: s => !!s.N && !!s.S, value: s => exeN(s.N) + exeS(s.S) },
-      { predicate: s => !!s.N && !!s.F, value: s => exeN(s.N) + exeF(s.F) },
-      { predicate: s => !!s.F && !!s.S, value: s => exeF(s.F) + exeS(s.S) },
-      { predicate: s => !!s.F, value: s => exeF(s.F) }
-    ],
-    0
-  )(S);
+  return returnOne([
+    {
+      predicate: s => !!s.N && !!s.S,
+      value: s => (s.op === "+" ? exeN(s.N) + exeS(s.S) : exeN(s.N) - exeS(s.S))
+    },
+    {
+      predicate: s => !!s.N && !!s.F,
+      value: s => (s.op === "+" ? exeN(s.N) + exeF(s.F) : exeN(s.N) - exeF(s.F))
+    },
+    {
+      predicate: s => !!s.F && !!s.S,
+      value: s => (s.op === "+" ? exeF(s.F) + exeS(s.S) : exeF(s.F) - exeS(s.S))
+    },
+    { predicate: s => !!s.F, value: s => exeF(s.F) }
+  ])(S);
 }
 
 /**
- * F -> N * F | N * E | E * F | E
  * @param {*} F
  * @returns Number
  */
 function exeF(F) {
-  return returnOne(
-    [
-      { predicate: f => !!f.N && !!f.F, value: f => exeN(f.N) * exeF(f.F) },
-      { predicate: f => !!f.N && !!f.E, value: f => exeN(f.N) * exeE(f.E) },
-      { predicate: f => !!f.E && !!f.F, value: f => exeE(f.E) * exeF(f.F) },
-      { predicate: f => !!f.E, value: f => exeE(f.E) }
-    ],
-    0
-  )(F);
+  return returnOne([
+    {
+      predicate: f => !!f.N && !!f.F,
+      value: f => (f.op === "*" ? exeN(f.N) * exeF(f.F) : exeN(f.N) / exeF(f.F))
+    },
+    {
+      predicate: f => !!f.N && !!f.E,
+      value: f => (f.op === "*" ? exeN(f.N) * exeE(f.E) : exeN(f.N) / exeE(f.E))
+    },
+    {
+      predicate: f => !!f.E && !!f.F,
+      value: f => (f.op === "*" ? exeE(f.E) * exeF(f.F) : exeE(f.E) / exeF(f.F))
+    },
+    { predicate: f => !!f.E, value: f => exeE(f.E) }
+  ])(F);
 }
 
 /**
- *  E -> (S) | N
  * @param {*} E
  * @returns Number
  */
 function exeE(E) {
-  return returnOne(
-    [
-      { predicate: e => !!e.S, value: e => exeS(e.S) },
-      { predicate: e => !!e.N, value: e => exeN(e.N) }
-    ],
-    0
-  )(E);
+  return returnOne([
+    { predicate: e => !!e.S, value: e => exeS(e.S) },
+    { predicate: e => !!e.N, value: e => exeN(e.N) }
+  ])(E);
 }
 
 /**
@@ -528,13 +517,15 @@ function getReadMe() {
 Simple Binary calculator
 
 Language symbols: 
-  0, 1, +, *, (, )
+  0, 1, +, -, *, /, (, )
 
 Numbers in binary, e.g: 
   11.0010010 ~ 3.14
+  -0.01 = -0.25
 \`\`\`
 (1 + 1.1) * 0.1;
- 1 + 1 + 1 * 10;
+(11.1 - 111/10) + 11.0010010;
+1+1+1+1+1-101;
 `;
 }
 function onResize() {
