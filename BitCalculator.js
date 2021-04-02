@@ -27,15 +27,15 @@ function stream(stringOrArray) {
     isEmpty: () => array.length === 0,
     toString: () =>
       array.map(s => (typeof s === "string" ? s : JSON.stringify(s))).join(""),
-    filter: predicate => stream(array.filter(predicate))
+    filter: predicate => stream(array.filter(predicate)),
+    log: () => {
+      let s = stream(array);
+      while (s.hasNext()) {
+        console.log(s.peek());
+        s = s.next();
+      }
+    }
   };
-}
-
-function readStream(stream) {
-  while (stream.hasNext()) {
-    console.log(stream.peek());
-    stream = stream.next();
-  }
 }
 
 function or(...rules) {
@@ -132,13 +132,11 @@ function eatCommentTokenFromStream(stream) {
  * @param {*} string
  */
 function parse(string) {
-  console.log("Aquinas");
   const removeCommentsStream = removeComments(stream(string));
   const filterStream = removeCommentsStream.filter(
     c => c !== " " && c !== "\n"
   );
   const program = parseProgram(filterStream);
-  console.log("Parse tree", program.left);
   return program.left;
 }
 
@@ -529,12 +527,15 @@ function getReadMe() {
   return `\`\`\`
 Simple Binary calculator
 
-Available operators: 
-  *, +, ()
+Language symbols: 
+  0, 1, +, *, (, )
 
 Numbers in binary, e.g: 
   11.0010010 ~ 3.14
-\`\`\``;
+\`\`\`
+(1 + 1.1) * 0.1;
+ 1 + 1 + 1 * 10;
+`;
 }
 function onResize() {
   const style = document.getElementById("composer").style;
@@ -560,19 +561,50 @@ function onResize() {
 onResize();
 window.addEventListener("resize", onResize);
 
+/**
+ *
+ * @param {*} renderTypes
+ * @param {*} selectedRender pointer to selectedRender
+ */
+function setRenderSelect(renderTypes, selectedRender) {
+  selector = document.getElementById("renderSelector");
+  Object.keys(renderTypes).forEach((name, i) => {
+    option = document.createElement("option");
+    option.setAttribute("value", name);
+    if (i === 0) option.setAttribute("selected", "");
+    option.innerText = name;
+    selector.appendChild(option);
+  });
+  selector.addEventListener("change", e => {
+    const renderName = e.target.value;
+    selectedRender = renderTypes[renderName];
+    const output = document.getElementById("output");
+    output.value = selectedRender(parse(editor.getValue()));
+  });
+}
+
 (() => {
-  let timer = null;
-  const input = getReadMe() + "\n" + "(1 + 1.1) * 0.1;\n 1 + 1 + 1 * 10;";
+  const renderTypes = {
+    Calculator: execute,
+    "Parse Tree": tree => {
+      return JSON.stringify(tree, null, 3);
+    }
+  };
+  let selectedRender = renderTypes["Calculator"];
+  setRenderSelect(renderTypes, selectedRender);
+  const input = getReadMe();
   const editor = ace.edit("input");
   editor.setValue(input);
   const output = document.getElementById("output");
-  output.value = execute(parse(editor.getValue()));
+  output.value = selectedRender(parse(editor.getValue()));
+  // set up timer
+  let timer = null;
   editor.getSession().on("change", () => {
     if (timer) {
       clearTimeout(timer);
     }
     timer = setTimeout(
-      () => (output.value = execute(parse(editor.getValue()))),
+      () => (output.value = selectedRender(parse(editor.getValue()))),
       250
     );
   });
