@@ -511,6 +511,8 @@ function exeD(D) {
  *                                          UI                                          *
  *                                                                                      */
 //========================================================================================
+// Global selected render
+let selectedRender = ast => {};
 
 function getReadMe() {
   return `\`\`\`
@@ -557,7 +559,7 @@ window.addEventListener("resize", onResize);
  * @param {*} renderTypes
  * @param {*} selectedRender pointer to selectedRender
  */
-function setRenderSelect(renderTypes, selectedRender) {
+function setRenderSelect(renderTypes) {
   selector = document.getElementById("renderSelector");
   Object.keys(renderTypes).forEach((name, i) => {
     option = document.createElement("option");
@@ -581,8 +583,8 @@ function setRenderSelect(renderTypes, selectedRender) {
       return JSON.stringify(tree, null, 3);
     }
   };
-  let selectedRender = renderTypes["Calculator"];
-  setRenderSelect(renderTypes, selectedRender);
+  selectedRender = renderTypes["Calculator"];
+  setRenderSelect(renderTypes);
   const input = getReadMe();
   const editor = ace.edit("input");
   editor.setValue(input);
