@@ -4,13 +4,13 @@ Simple binary calculator
 
 ## Available operators
 
-`*, +, ()`
+`*, /, +, -, ()`
 
 ## Numbers in binary
 
 `11.0010010 ~ 3.14`
 
-`101 = 5`
+`-101 = -5`
 
 # Grammar
 
@@ -18,9 +18,9 @@ Simple binary calculator
 Program -> Expression Program | epsilon
 Expression -> S;
 S -> N + S | N + F | F + S | F
-S -> N - S | N - F | F - S (TODO)
+S -> N - S | N - F | F - S 
 F -> N * F | N * E | E * F | E
-F -> N / F | N / E | E / F (TODO)
+F -> N / F | N / E | E / F
 E -> (S) | N
 N -> D.D | -D.D | D | -D
 D -> 0D | 1D | epsilon
