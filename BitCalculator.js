@@ -530,6 +530,14 @@ Numbers in binary, e.g:
 1+1+1+1+1-101;
 `;
 }
+
+const renderTypes = {
+  Calculator: execute,
+  "Parse Tree": tree => {
+    return JSON.stringify(tree, null, 3);
+  }
+};
+
 function onResize() {
   const style = document.getElementById("composer").style;
   const input = document.getElementById("inputContainer");
@@ -576,7 +584,7 @@ function setRenderSelect(renderTypes, editor) {
   });
 }
 
-function getEditor() {
+function createEditor() {
   const editor = monaco.editor.create(document.getElementById("input"), {
     value: "",
     language: "yaml",
@@ -584,6 +592,7 @@ function getEditor() {
     wordWrap: "wordWrapColumn",
     theme: "vs-dark"
   });
+  addEditorEventListener(editor, document.getElementById("output"));
   return editor;
 }
 
@@ -609,17 +618,10 @@ function addEditorEventListener(editor, output) {
 }
 
 (() => {
-  const renderTypes = {
-    Calculator: execute,
-    "Parse Tree": tree => {
-      return JSON.stringify(tree, null, 3);
-    }
-  };
-  const editor = getEditor();
+  const editor = createEditor();
   const input = getReadMe();
   editor.setValue(input);
   const output = document.getElementById("output");
-  addEditorEventListener(editor, output);
   selectedRender = renderTypes["Calculator"];
   setRenderSelect(renderTypes, editor);
   output.value = selectedRender(parse(editor.getValue()));
