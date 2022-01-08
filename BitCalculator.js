@@ -590,7 +590,8 @@ function createEditor() {
     language: "yaml",
     lineNumbers: "on",
     wordWrap: "wordWrapColumn",
-    theme: "vs-dark"
+    theme: "vs-dark",
+    fontSize: "20"
   });
   addEditorEventListener(editor, document.getElementById("output"));
   return editor;
