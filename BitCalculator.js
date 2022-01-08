@@ -91,7 +91,7 @@ function removeComments(streamWithComments) {
 function isCommentToken(stream) {
   let s = stream;
   let n = 3;
-  while (s.peek() === "`" && n > 0) {
+  while (s.peek() === "'" || (s.peek() === '"' && n > 0)) {
     s = s.next();
     n--;
   }
@@ -515,7 +515,7 @@ function exeD(D) {
 let selectedRender = ast => {};
 
 function getReadMe() {
-  return `\`\`\`
+  return `'''
 Simple Binary calculator
 
 Language symbols: 
@@ -524,7 +524,7 @@ Language symbols:
 Numbers in binary, e.g: 
   11.0010010 ~ 3.14
   -0.01 = -0.25
-\`\`\`
+'''
 (1 + 1.1) * 0.1;
 (11.1 - 111/10) + 11.0010010;
 1+1+1+1+1-101;
@@ -557,9 +557,9 @@ window.addEventListener("resize", onResize);
 /**
  *
  * @param {*} renderTypes
- * @param {*} selectedRender pointer to selectedRender
+ * @param {*} editor
  */
-function setRenderSelect(renderTypes) {
+function setRenderSelect(renderTypes, editor) {
   selector = document.getElementById("renderSelector");
   Object.keys(renderTypes).forEach((name, i) => {
     option = document.createElement("option");
@@ -576,6 +576,38 @@ function setRenderSelect(renderTypes) {
   });
 }
 
+function getEditor() {
+  const editor = monaco.editor.create(document.getElementById("input"), {
+    value: "",
+    language: "yaml",
+    lineNumbers: "on",
+    wordWrap: "wordWrapColumn",
+    theme: "vs-dark"
+  });
+  return editor;
+}
+
+function debounce(lambda, debounceTimeInMillis = 500) {
+  let timerId;
+  return function (...vars) {
+    if (timerId) {
+      clearTimeout(timerId);
+    }
+    timerId = setTimeout(() => {
+      lambda(...vars);
+    }, debounceTimeInMillis);
+    return true;
+  };
+}
+
+function addEditorEventListener(editor, output) {
+  editor.onDidChangeModelContent(
+    debounce(() => {
+      output.value = selectedRender(parse(editor.getValue()));
+    })
+  );
+}
+
 (() => {
   const renderTypes = {
     Calculator: execute,
@@ -583,22 +615,12 @@ function setRenderSelect(renderTypes) {
       return JSON.stringify(tree, null, 3);
     }
   };
-  selectedRender = renderTypes["Calculator"];
-  setRenderSelect(renderTypes);
+  const editor = getEditor();
   const input = getReadMe();
-  const editor = ace.edit("input");
   editor.setValue(input);
   const output = document.getElementById("output");
+  addEditorEventListener(editor, output);
+  selectedRender = renderTypes["Calculator"];
+  setRenderSelect(renderTypes, editor);
   output.value = selectedRender(parse(editor.getValue()));
-  // set up timer
-  let timer = null;
-  editor.getSession().on("change", () => {
-    if (timer) {
-      clearTimeout(timer);
-    }
-    timer = setTimeout(
-      () => (output.value = selectedRender(parse(editor.getValue()))),
-      250
-    );
-  });
 })();
