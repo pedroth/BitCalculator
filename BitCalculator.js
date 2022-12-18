@@ -540,7 +540,7 @@ const renderTypes = {
 
 function onResize() {
   const style = document.getElementById("composer").style;
-  const input = document.getElementById("inputContainer");
+  const input = document.getElementById("input");
   const output = document.getElementById("outputContainer");
   if (window.innerWidth >= window.innerHeight) {
     style["flex-direction"] = "row";
@@ -558,9 +558,6 @@ function onResize() {
     output.style.height = `${window.innerHeight / 2}px`;
   }
 }
-
-onResize();
-window.addEventListener("resize", onResize);
 
 /**
  *
@@ -591,7 +588,8 @@ function createEditor() {
     lineNumbers: "on",
     wordWrap: "wordWrapColumn",
     theme: "vs-dark",
-    fontSize: "20"
+    fontSize: "20",
+    automaticLayout: true
   });
   addEditorEventListener(editor, document.getElementById("output"));
   return editor;
@@ -620,6 +618,8 @@ function addEditorEventListener(editor, output) {
 
 (() => {
   const editor = createEditor();
+  onResize();
+  window.addEventListener("resize", onResize);
   const input = getReadMe();
   editor.setValue(input);
   const output = document.getElementById("output");
