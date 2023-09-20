@@ -75,13 +75,13 @@ function removeComments(streamWithComments) {
       stack.push(s.peek());
       s = s.next();
     } else if (isComment && state === 0) {
-      s = eatCommentTokenFromStream(s);
+      s = eat3tokens(s);
       state = 1;
     } else if (!isComment && state === 1) {
       s = s.next();
     } else {
       // isComment && state === 1
-      s = eatCommentTokenFromStream(s);
+      s = eat3tokens(s);
       state = 0;
     }
   }
@@ -98,7 +98,7 @@ function isCommentToken(stream) {
   return n === 0;
 }
 
-function eatCommentTokenFromStream(stream) {
+function eat3tokens(stream) {
   let s = stream;
   let n = 3;
   while (n > 0) {
