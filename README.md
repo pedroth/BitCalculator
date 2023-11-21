@@ -33,3 +33,9 @@ D -> 0D | 1D | epsilon
 
 1 + 1 + 1 * 10; \\ 4
 ```
+
+# Playground
+
+https://pedroth.github.io/BitCalculator
+
+
