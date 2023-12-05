@@ -6,8 +6,6 @@
   <title>Bit Calculator</title>
   <link rel="stylesheet" href="./index.css" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" crossorigin="anonymous" />
-  <!-- Add monaco style prod -->
-  <link rel="stylesheet" data-name="vs/editor/editor.main" href="./vs-monaco/editor/editor.main.css" />
 </head>
 
 <body>
@@ -29,12 +27,7 @@
     </div>
   </div>
 </body>
-<script>
-  var require = { paths: { vs: "vs-monaco/" } };
-</script>
-<script src="./vs-monaco/loader.js"></script>
-<script src="./vs-monaco/editor/editor.main.nls.js"></script>
-<script src="./vs-monaco/editor/editor.main.js"></script>
-<script src="./BitCalculator.js"></script>
+<script src="./vs-monaco/package/min/vs/loader.js"></script>
+<script type="module" src="./index.js"></script>
 
 </html>
