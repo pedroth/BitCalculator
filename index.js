@@ -82,7 +82,7 @@ async function createEditor() {
   // eslint-disable-next-line no-undef
   require.config({ paths: { vs: './vs-monaco/package/min/vs' } });
 
-  
+
   const editor = await new Promise((re) => {
     // eslint-disable-next-line no-undef
     require(['vs/editor/editor.main'], function () {
