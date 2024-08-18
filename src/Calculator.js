@@ -6,6 +6,7 @@
 //========================================================================================
 
 import { returnOne } from "./Utils.js";
+import BigNumber from 'https://unpkg.com/bignumber.js@latest/bignumber.mjs';
 
 /**
  * Return values of expressions
@@ -43,15 +44,15 @@ function exeS(S) {
     return returnOne([
         {
             predicate: s => !!s.N && !!s.S,
-            value: s => (s.op === "+" ? exeN(s.N) + exeS(s.S) : exeN(s.N) - exeS(s.S))
+            value: s => (s.op === "+" ? exeN(s.N).plus(exeS(s.S)) : exeN(s.N).minus(exeS(s.S)))
         },
         {
             predicate: s => !!s.N && !!s.F,
-            value: s => (s.op === "+" ? exeN(s.N) + exeF(s.F) : exeN(s.N) - exeF(s.F))
+            value: s => (s.op === "+" ? exeN(s.N).plus(exeF(s.F)) : exeN(s.N).minus(exeF(s.F)))
         },
         {
             predicate: s => !!s.F && !!s.S,
-            value: s => (s.op === "+" ? exeF(s.F) + exeS(s.S) : exeF(s.F) - exeS(s.S))
+            value: s => (s.op === "+" ? exeF(s.F).plus(exeS(s.S)) : exeF(s.F).minus(exeS(s.S)))
         },
         { predicate: s => !!s.F, value: s => exeF(s.F) }
     ])(S);
@@ -65,15 +66,15 @@ function exeF(F) {
     return returnOne([
         {
             predicate: f => !!f.N && !!f.F,
-            value: f => (f.op === "*" ? exeN(f.N) * exeF(f.F) : exeN(f.N) / exeF(f.F))
+            value: f => (f.op === "*" ? exeN(f.N).times(exeF(f.F)) : exeN(f.N).div(exeF(f.F)))
         },
         {
             predicate: f => !!f.N && !!f.E,
-            value: f => (f.op === "*" ? exeN(f.N) * exeE(f.E) : exeN(f.N) / exeE(f.E))
+            value: f => (f.op === "*" ? exeN(f.N).times(exeE(f.E)) : exeN(f.N).div(exeE(f.E)))
         },
         {
             predicate: f => !!f.E && !!f.F,
-            value: f => (f.op === "*" ? exeE(f.E) * exeF(f.F) : exeE(f.E) / exeF(f.F))
+            value: f => (f.op === "*" ? exeE(f.E).times(exeF(f.F)) : exeE(f.E).div(exeF(f.F)))
         },
         { predicate: f => !!f.E, value: f => exeE(f.E) }
     ])(F);
@@ -98,20 +99,20 @@ function exeE(E) {
 function exeN(N) {
     const integerBits = exeD(N.int);
     const decimalBits = exeD(N.decimal);
-    let integer = 0;
-    let id = 1;
+    let integer = new BigNumber("0");
+    let id = new BigNumber("1");
     for (let i = integerBits.length - 1; i >= 0; i--) {
-        integer += id * integerBits[i];
-        id *= 2;
+        integer = integer.plus(id.times(new BigNumber(integerBits[i])));
+        id = id.times(new BigNumber(2));
     }
-    let decimal = 0;
-    id = 0.5;
+    let decimal = new BigNumber("0");
+    id = new BigNumber("0.5");
     for (let i = 0; i < decimalBits.length; i++) {
-        decimal += id * decimalBits[i];
-        id /= 2;
+        decimal = decimal.plus(id.times(new BigNumber(decimalBits[i])));
+        id = id.div(new BigNumber(2));
     }
-    const number = integer + decimal;
-    return !!N.negative ? -1 * number : number;
+    const number = integer.plus(decimal);
+    return !!N.negative ? number.times(new BigNumber("-1")) : number;
 }
 
 /**
