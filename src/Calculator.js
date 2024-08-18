@@ -7,6 +7,8 @@
 
 import { returnOne } from "./Utils.js";
 
+const varsMap = {};
+
 /**
  * Return values of expressions
  * @param {*} tree
@@ -32,7 +34,16 @@ function exeProgram(program) {
  * @returns Number
  */
 function exeExpression(expression) {
-    return exeS(expression.S);
+    return returnOne([
+        {
+            predicate: e => e.S,
+            value: e => exeS(e.S)
+        },
+        {
+            predicate: e => e.Assign,
+            value: e => exeAssign(e.Assign)
+        }
+    ])(expression);
 }
 
 /**
@@ -55,6 +66,18 @@ function exeS(S) {
         },
         { predicate: s => !!s.F, value: s => exeF(s.F) }
     ])(S);
+}
+
+/**
+ * @param {*} Var
+ * @param {*} S
+ * @returns Number
+ */
+function exeAssign(Assign) {
+    const { Var, S } = Assign;
+    const value = exeS(S);
+    varsMap[Var.name] = value;
+    return `${Var.name} = ${value}`;
 }
 
 /**
@@ -86,7 +109,8 @@ function exeF(F) {
 function exeE(E) {
     return returnOne([
         { predicate: e => !!e.S, value: e => exeS(e.S) },
-        { predicate: e => !!e.N, value: e => exeN(e.N) }
+        { predicate: e => !!e.N, value: e => exeN(e.N) },
+        { predicate: e => !!e.Var, value: e => varsMap[e.Var.name] }
     ])(E);
 }
 
