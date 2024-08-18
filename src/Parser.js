@@ -10,12 +10,16 @@ import { or, pair, removeComments, stream } from "./Utils.js";
  * Grammar
  *
  * Program -> Expression Program | epsilon
- * Expression -> S;
+ * Expression -> Assign; | S; 
+ * Assign -> Var=S
+ * Var -> VarChar Var | epsilon
  * S -> N (+ | -) S | N (+ | -) F | F (+ | -) S | F
  * F -> N (* | /) F | N (* | /) E | E (* | /) F | E
- * E -> (S) | N
+ * E -> (S) | N | Var
  * N -> D.D | -D.D | D | -D
  * D ->  0D | 1D | epsilon
+ * 
+ * VarChar -> {all except: ";", "0", "1", "+", "-", "*", "/", "=", "(", ")"}
  */
 
 /**
@@ -60,18 +64,66 @@ function parseProgram(stream) {
  * @param {*} stream
  */
 function parseExpression(stream) {
-    const { left: S, right: nextStream } = parseS(stream);
-    if (nextStream.peek() === ";") {
-        return pair(
-            {
-                type: "expression",
-                S
-            },
-            nextStream.next()
-        );
+    return or(
+        () => {
+            const { left: Assign, right: nextStream } = parseAssign(stream);
+            if (nextStream.peek() === ";") {
+                return pair(
+                    {
+                        type: "expression",
+                        Assign
+                    },
+                    nextStream.next()
+                );
+            }
+            throw new Error(
+                "Error occurred while parsing expression,"
+            );
+        },
+        () => {
+            const { left: S, right: nextStream } = parseS(stream);
+            if (nextStream.peek() === ";") {
+                return pair(
+                    {
+                        type: "expression",
+                        S
+                    },
+                    nextStream.next()
+                );
+            }
+            throw new Error(
+                "Error occurred while parsing expression,"
+            );
+        },
+    );
+}
+
+function parseAssign(stream) {
+    const { left: Var, right: nextStream } = parseVar(stream);
+    if (nextStream.peek() === "=") {
+        const { left: S, right: nextNextStream } = parseS(nextStream.next());
+        return pair({ type: "assign", Var, S }, nextNextStream);
     }
     throw new Error(
-        "Error occurred while parsing expression," + nextStream.toString()
+        "Error occurred while parsing expression,"
+    );
+}
+
+function parseVar(stream) {
+    const nonVarChars = [";", "0", "1", "+", "-", "*", "/", "=", "(", ")"];
+    return or(
+        () => {
+            const token = stream.peek();
+            if (token && !nonVarChars.some(x => token === x)) {
+                const { left: Var, right: nextStream } = parseVar(stream.next());
+                return pair({
+                    type: "var",
+                    name: token + Var.name
+                }, nextStream);
+            }
+            throw new Error("Error occurred while parsing var")
+        },
+        () => pair({ type: "var", name: "" }, stream)
     );
 }
 
@@ -91,7 +143,7 @@ function parseBinary(
             );
             return pair(composeResult(leftTree, rightTree, operator), nextNextStream);
         }
-        throw new Error(errorMessage + nextStream.toString());
+        throw new Error(errorMessage);
     };
 }
 
@@ -194,12 +246,16 @@ function parseE(stream) {
                 }
             }
             throw new Error(
-                "Error occurred while parsing E," + nextStream.toString()
+                "Error occurred while parsing E,"
             );
         },
         () => {
             const { left: N, right: nextStream } = parseN(stream);
             return pair({ type: "E", N }, nextStream);
+        },
+        () => {
+            const { left: Var, right: nextStream } = parseVar(stream);
+            return pair({ type: "E", Var }, nextStream);
         }
     );
 }
@@ -218,7 +274,7 @@ function parseN(stream) {
                 return pair({ type: "N", int: D1, decimal: D2 }, nextNextStream);
             }
             throw new Error(
-                "Error occurred while parsing N," + nextStream.toString()
+                "Error occurred while parsing N,"
             );
         },
         () => {
@@ -233,7 +289,7 @@ function parseN(stream) {
                 }
             }
             throw new Error(
-                "Error occurred while parsing N," + nextStream.toString()
+                "Error occurred while parsing N,"
             );
         },
         () => {
@@ -242,11 +298,12 @@ function parseN(stream) {
                 return pair({ type: "N", int: D, negative: true }, nextStream);
             }
             throw new Error(
-                "Error occurred while parsing N," + nextStream.toString()
+                "Error occurred while parsing N,"
             );
         },
         () => {
             const { left: D, right: nextStream } = parseD(stream);
+            if (!D.int) throw new Error("Error occurred while parsing N");
             return pair({ type: "N", int: D }, nextStream);
         }
     );
@@ -264,14 +321,14 @@ function parseD(stream) {
                 const { left: D, right: nextStream } = parseD(stream.next());
                 return pair({ type: "D", int: D?.int ? "0" + D.int : "0" }, nextStream);
             }
-            throw new Error("Error occurred while parsing D," + stream.toString());
+            throw new Error("Error occurred while parsing D,");
         },
         () => {
             if (stream.peek() === "1") {
                 const { left: D, right: nextStream } = parseD(stream.next());
                 return pair({ type: "D", int: D?.int ? "1" + D.int : "1" }, nextStream);
             }
-            throw new Error("Error occurred while parsing D," + stream.toString());
+            throw new Error("Error occurred while parsing D,");
         },
         () => pair({ type: "D", int: null }, stream)
     );
