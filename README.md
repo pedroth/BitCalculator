@@ -4,7 +4,7 @@ Simple binary calculator
 
 ## Available operators
 
-`*, /, +, -, ()`
+`*, /, +, -`
 
 ## Numbers in binary
 
@@ -14,11 +14,13 @@ Simple binary calculator
 
 ## Variables
 
-Assign variables
+Assign variables:
 `A = 11;`
-Using variables
+
+Using variables:
 `A+A+A;`
-Assign variables with other variables
+
+Assign variables with other variables:
 `B = 10*(A+A+A);`
 
 # Grammar
